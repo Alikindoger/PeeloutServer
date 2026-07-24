@@ -147,7 +147,7 @@ class Program
                 player.PosY += player.CurrentInputY * velocidad * TIME_PER_TICK;
                 
                 // Si no hemos recibido ningun paquete del jugador en 15 ticks (medio segundo), entonces asumimos
-                // que se ha desconectado o lo que sea, reiniciamos el input 0 para no seguir usando el último input recivido
+                // que se ha desconectado o lo que sea, reiniciamos el input 0 para no seguir usando el último input recibido
                 if (currentTick - player.UltimoTickRecibido > 15)
                 {
                     player.CurrentInputX = 0f;
