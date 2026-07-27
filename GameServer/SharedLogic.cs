@@ -1,29 +1,39 @@
 
 
-namespace  SharedLogic
+namespace SharedLogic
 {
 
-        // movement update struct [client -> server]
-        public class PlayerInputPacket
-        {
-            public uint Tick { get; set; }
+    // movement update struct [client -> server]
+    public class PlayerInputPacket
+    {
+        public uint Tick { get; set; }
         public float InputX { get; set; }
         public float InputY { get; set; }
     }
 
-// [server -> clients]
-        public class PlayerStatePacket
-        {
-            public int PlayerId { get; set; }
+    // [server -> clients]
+    public class PlayerStatePacket
+    {
+        public int PlayerId { get; set; }
         public uint Tick { get; set; }
+
+        // Posicion
         public float PosX { get; set; }
-        public float PosY { get; set; }
+        public float PosZ { get; set; }
+
+        // Rotación
+        public float LookDirX { get; set; }
+        public float LookDirZ { get; set; }
+
+        // Stats
+        public int CurrentHealth { get; set; }
     }
 
     public class WelcomePacket
     {
         public int MyId { get; set; }
     }
+
 }
 
 
