@@ -1,5 +1,3 @@
-
-
 namespace SharedLogic
 {
 
@@ -9,6 +7,9 @@ namespace SharedLogic
         public uint Tick { get; set; }
         public float InputX { get; set; }
         public float InputY { get; set; }
+
+        public float LookInputX { get; set;}
+        public float LookInputZ { get; set;}
     }
 
     // [server -> clients]

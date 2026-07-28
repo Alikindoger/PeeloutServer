@@ -52,6 +52,9 @@ public struct PlayerInputStruct
     public uint Tick; 
     public float InputX;
     public float InputY;
+
+    public float InputDirX;
+    public float InputDirZ;
 }
 
 public class InputRingBuffer
@@ -88,7 +91,10 @@ public class InputRingBuffer
             {
               Tick = tick,
               InputX = 0,
-              InputY = 0  
+              InputY = 0,
+
+              InputDirX = 0,
+              InputDirZ = 0,
             };
         }
 
@@ -200,6 +206,9 @@ class Program
                 Tick = packet.Tick,
                 InputX = packet.InputX,
                 InputY = packet.InputY,
+
+                InputDirX = packet.LookInputX,
+                InputDirZ = packet.LookInputZ,
             };
 
             player.InputBuffer.AddInput(newInput);
@@ -230,6 +239,8 @@ class Program
                 {
                     input.InputX = 0;
                     input.InputY = 0;
+                    input.InputDirX = 0;
+                    input.InputDirZ = 0;
                 }
             }
 
@@ -240,10 +251,16 @@ class Program
             }
 
             Vector3 moveDirection = new Vector3(inputDir.X, 0, inputDir.Y);
+            Vector3 lookDirection = new Vector3(input.InputDirX, 0, input.InputDirZ);
 
             player.Position += moveDirection * player.MoveSpeed * TIME_PER_TICK;
 
-            Console.WriteLine("Jugador " + player.Id + ": (" + player.Position.X + " ," + player.Position.Z + ")");
+            if (lookDirection.LengthSquared() > 0.1f)
+            {
+                player.LookDirection = Vector3.Normalize(lookDirection);
+            }
+
+            Console.WriteLine($"Jugador {player.Id}: (X:{player.Position.X}, Z:{player.Position.Z}) | {player.LookDirection}");
         }
     }
 
