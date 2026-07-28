@@ -12,6 +12,15 @@ namespace SharedLogic
         public float LookInputZ { get; set;}
     }
 
+    public class PlayerStatsPacket
+    {
+        public int PlayerId {get; set;}
+        public float MoveSpeed { get; set;}
+        public float MaxHealth { get; set;}
+        public float CurrentHealth { get; set;}
+        public float AttackDamage { get; set;}
+    }
+
     // [server -> clients]
     public class PlayerStatePacket
     {
@@ -25,9 +34,6 @@ namespace SharedLogic
         // Rotación
         public float LookDirX { get; set; }
         public float LookDirZ { get; set; }
-
-        // Stats
-        public int CurrentHealth { get; set; }
     }
 
     public class WelcomePacket

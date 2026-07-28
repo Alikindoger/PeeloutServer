@@ -11,20 +11,22 @@ public class PlayerServerState
 {
     public int Id { get; private set; }
     public NetPeer Peer { get; private set; }
-    public InputRingBuffer InputBuffer { get; private set; } 
+    public InputRingBuffer InputBuffer { get; private set; }
     public PlayerInputStruct LastValidInput { get; set; }
     public int MissedTicksCount { get; set; }
 
     public Vector3 Position { get; set; }
     public Vector3 LookDirection { get; set; }
-    public float MoveSpeed { get; set; } = 5f;
+    public float MoveSpeed { get; set; } = 10f;
 
     public int MaxHealth { get; set; } = 100;
     public int CurrentHealth { get; set; }
     public bool IsDead => CurrentHealth <= 0;
-    
-    public uint LastReceivedTick { get; set; } 
-    
+
+    public float AttackDamage { get; set; } = 10;
+
+    public uint LastReceivedTick { get; set; }
+
     public PlayerServerState(int id, NetPeer peer, Vector3 spawnPosition)
     {
         Id = id;
@@ -32,8 +34,8 @@ public class PlayerServerState
         Position = spawnPosition;
 
         LookDirection = Vector3.UnitZ;
-        
-        InputBuffer = new InputRingBuffer(64); 
+
+        InputBuffer = new InputRingBuffer(64);
         CurrentHealth = MaxHealth;
         LastReceivedTick = 0;
     }
@@ -49,7 +51,7 @@ public class PlayerServerState
 
 public struct PlayerInputStruct
 {
-    public uint Tick; 
+    public uint Tick;
     public float InputX;
     public float InputY;
 
@@ -89,12 +91,12 @@ public class InputRingBuffer
             isValid = false;
             return new PlayerInputStruct
             {
-              Tick = tick,
-              InputX = 0,
-              InputY = 0,
+                Tick = tick,
+                InputX = 0,
+                InputY = 0,
 
-              InputDirX = 0,
-              InputDirZ = 0,
+                InputDirX = 0,
+                InputDirZ = 0,
             };
         }
 
@@ -105,14 +107,14 @@ public class InputRingBuffer
 class Program
 {
     static Dictionary<int, PlayerServerState> connectedPlayers = new Dictionary<int, PlayerServerState>();
-    
+
     static NetPacketProcessor packetProcessor = new NetPacketProcessor();
     static NetDataWriter writer = new NetDataWriter();
 
     // TICK STUFF
     static uint _serverTick = 0;
     const float TICK_RATE = 30f;
-    const float TIME_PER_TICK = 1f / TICK_RATE; 
+    const float TIME_PER_TICK = 1f / TICK_RATE;
 
     static void Main(string[] args)
     {
@@ -129,7 +131,7 @@ class Program
         listener.PeerConnectedEvent += peer =>
         {
             Console.WriteLine($"Jugador conectado ID asignado: {peer.Id}");
-            
+
             PlayerServerState newPlayer = new PlayerServerState(peer.Id, peer, Vector3.Zero);
             connectedPlayers.Add(peer.Id, newPlayer);
 
@@ -138,6 +140,9 @@ class Program
             writer.Reset();
             packetProcessor.Write(writer, welcome);
             peer.Send(writer, DeliveryMethod.ReliableOrdered);
+
+            // Enviamos las stats
+            SendPlayerStats(newPlayer);
         };
 
         listener.PeerDisconnectedEvent += (peer, disconnectInfo) =>
@@ -152,7 +157,7 @@ class Program
             {
                 packetProcessor.ReadAllPackets(reader, peer);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"\n--- ERROR AL RECIBIR PAQUETE ---");
@@ -182,10 +187,10 @@ class Program
             while (acum >= TIME_PER_TICK)
             {
                 _serverTick++;
-                
+
                 SimulateWorld();
                 UpdateClients(server);
-                
+
                 acum -= TIME_PER_TICK;
             }
 
@@ -216,13 +221,29 @@ class Program
         }
     }
 
+    public static void SendPlayerStats(PlayerServerState player)
+    {
+        PlayerStatsPacket statsPacket = new PlayerStatsPacket
+        {
+            PlayerId = player.Id,
+            MoveSpeed = player.MoveSpeed,
+            MaxHealth = player.MaxHealth,
+            CurrentHealth = player.CurrentHealth,
+            AttackDamage = player.AttackDamage
+        };
+
+        writer.Reset();
+        packetProcessor.Write(writer, statsPacket);
+        player.Peer.Send(writer, DeliveryMethod.ReliableOrdered);
+    }
+
     // SIMULACIÓN
     static void SimulateWorld()
     {
         foreach (var player in connectedPlayers.Values)
         {
             PlayerInputStruct input = player.InputBuffer.GetInput(_serverTick, out bool isValid);
-            
+
             if (isValid)
             {
                 player.LastValidInput = input;
@@ -268,22 +289,20 @@ class Program
     {
         if (connectedPlayers.Count == 0) return;
 
-        foreach (var player in connectedPlayers.Values) 
+        foreach (var player in connectedPlayers.Values)
         {
             // Ahora mismo esto funcionará pero luego habrá que cambiarlo, por ejemplo hacer que el paquete de posicion se envie 30veces/s pero el de vida y demás stats solo cuando cambien (lo mismo aplica al cliente)
             // Para eso creo que hay una funcion de channels (para enviar cada cosa por un canal, no sé muy bien en que se tendría que hacer pero sí se que habría que usar uno distinto en lo que es el juego como tal y el chat por ejemplo)
             PlayerStatePacket state = new PlayerStatePacket
             {
-                PlayerId = player.Id, 
-                Tick = _serverTick, 
+                PlayerId = player.Id,
+                Tick = _serverTick,
 
                 PosX = player.Position.X,
-                PosZ = player.Position.Z, 
+                PosZ = player.Position.Z,
 
                 LookDirX = player.LookDirection.X,
                 LookDirZ = player.LookDirection.Z,
-
-                CurrentHealth = player.CurrentHealth,
             };
 
             writer.Reset();
